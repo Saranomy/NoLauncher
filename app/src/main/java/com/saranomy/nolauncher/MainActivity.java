@@ -2,7 +2,6 @@
  * NoLauncher
  * Created by Saranomy on 2020-04-29.
  * Under Apache License Version 2.0, http://www.apache.org/licenses/
- * saranomy@gmail.com
  */
 package com.saranomy.nolauncher;
 
@@ -14,6 +13,7 @@ import java.util.Locale;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.text.Editable;
@@ -49,19 +49,26 @@ public class MainActivity extends Activity {
             }
         });
         activity_home_list = findViewById(R.id.activity_home_list);
+
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
+        intentFilter.addAction(Intent.ACTION_PACKAGE_INSTALL);
+        intentFilter.addAction(Intent.ACTION_PACKAGE_REMOVED);
+        intentFilter.addDataScheme("package");
+        registerReceiver(new AppChangeReceiver(), intentFilter);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         self = this;
-        if (apps == null)
+        if (apps == null || apps.size() == 0)
             loadApps();
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
+    protected void onStop() {
+        super.onStop();
         self = null;
     }
 
