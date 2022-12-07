@@ -190,7 +190,6 @@ class MainActivity : ComponentActivity() {
     }
 
     fun load(action: String? = null) {
-        Log.wtf("TAG", "=> $action")
         CoroutineScope(Dispatchers.IO).launch {
             loading = true
             try {
@@ -198,17 +197,17 @@ class MainActivity : ComponentActivity() {
                 val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
                     packageManager.getInstalledApplications(PackageManager.ApplicationInfoFlags.of(0))
                 else packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
-                var needUpdate = true
-                if (apps.isNotEmpty() && apps.size == result.size) {
-                    val appHashCount = apps.sumOf {
-                        it.packageName.hashCode()
-                    }
-                    val resultHashCount = result.sumOf {
-                        it.packageName.hashCode()
-                    }
-                    needUpdate = appHashCount != resultHashCount
+                val appHashCount = apps.sumOf {
+                    it.packageName.hashCode()
                 }
-                if (needUpdate) {
+                val resultHashCount = result.sumOf {
+                    if (packageManager.getLaunchIntentForPackage(it.packageName) != null) {
+                        it.packageName.hashCode()
+                    } else {
+                        0
+                    }
+                }
+                if (appHashCount != resultHashCount) {
                     result.forEach { info ->
                         if (packageManager.getLaunchIntentForPackage(info.packageName) != null) {
                             temp.add(
