@@ -3,7 +3,6 @@ package com.saranomy.nolauncher
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
@@ -17,17 +16,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.*
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -44,12 +44,23 @@ class MainActivity : ComponentActivity() {
     private var queried by mutableStateOf(listOf<AppItem>())
     private var query by mutableStateOf("")
     private var loading by mutableStateOf(false)
-    private var appChangeReceiver = AppChangeReceiver()
+    private var scrolling by mutableStateOf(false)
+    private lateinit var appChangeReceiver: AppChangeReceiver
+    private lateinit var focusManager: FocusManager
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            focusManager = LocalFocusManager.current
+            val coroutineScope = rememberCoroutineScope()
+            val lazyListState = rememberLazyListState()
+            if (scrolling) {
+                LaunchedEffect(coroutineScope) {
+                    lazyListState.scrollToItem(0)
+                }
+                scrolling = false
+            }
             NoLauncherTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -86,6 +97,7 @@ class MainActivity : ComponentActivity() {
                             )
                         )
                         LazyColumn(
+                            state = lazyListState,
                             modifier = Modifier.fillMaxSize()
                         ) {
                             items(
@@ -146,7 +158,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        Log.wtf("TAG", "onCreate")
+        appChangeReceiver = AppChangeReceiver()
         registerReceiver(appChangeReceiver, IntentFilter().apply {
             addAction(Intent.ACTION_PACKAGE_ADDED)
             addAction(Intent.ACTION_PACKAGE_REMOVED)
@@ -154,15 +166,10 @@ class MainActivity : ComponentActivity() {
         })
     }
 
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        Log.wtf("TAG", "onConfigurationChanged")
-    }
-
     override fun onResume() {
         super.onResume()
         self = this
-        if (apps.isEmpty()) load()
+        load()
     }
 
     override fun onStop() {
@@ -172,16 +179,18 @@ class MainActivity : ComponentActivity() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        Log.wtf("TAG", "onStop")
         self = null
     }
 
     override fun onBackPressed() {
         query = ""
+        query()
+        focusManager.clearFocus()
+        scrolling = true
     }
 
-    fun load() {
-        Log.wtf("TAG", "load")
+    fun load(action: String? = null) {
+        Log.wtf("TAG", "=> $action")
         CoroutineScope(Dispatchers.IO).launch {
             loading = true
             try {
@@ -189,20 +198,32 @@ class MainActivity : ComponentActivity() {
                 val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
                     packageManager.getInstalledApplications(PackageManager.ApplicationInfoFlags.of(0))
                 else packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
-                result.forEach { info ->
-                    if (packageManager.getLaunchIntentForPackage(info.packageName) != null) {
-                        temp.add(
-                            AppItem(
-                                name = info.loadLabel(packageManager).toString(),
-                                packageName = info.packageName,
-                                icon = icon(info.loadIcon(packageManager))
-                            )
-                        )
+                var needUpdate = true
+                if (apps.isNotEmpty() && apps.size == result.size) {
+                    val appHashCount = apps.sumOf {
+                        it.packageName.hashCode()
                     }
+                    val resultHashCount = result.sumOf {
+                        it.packageName.hashCode()
+                    }
+                    needUpdate = appHashCount != resultHashCount
                 }
-                temp.sort()
-                apps = temp.toList()
-                query()
+                if (needUpdate) {
+                    result.forEach { info ->
+                        if (packageManager.getLaunchIntentForPackage(info.packageName) != null) {
+                            temp.add(
+                                AppItem(
+                                    name = info.loadLabel(packageManager).toString(),
+                                    packageName = info.packageName,
+                                    icon = icon(info.loadIcon(packageManager))
+                                )
+                            )
+                        }
+                    }
+                    temp.sort()
+                    apps = temp.toList()
+                    query()
+                }
             } catch (ignored: Exception) {
             }
             loading = false
@@ -210,19 +231,20 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun query() {
-        Log.wtf("TAG", "query $query")
-        val temp = arrayListOf<AppItem>()
-        val matchQuery = query.trim()
-        queried = if (matchQuery.isEmpty()) {
-            apps.toList()
-        } else {
-            apps.forEach {
-                if (it.name.contains(matchQuery, true)) {
-                    temp.add(it)
+        CoroutineScope(Dispatchers.IO).launch {
+            val temp = arrayListOf<AppItem>()
+            val matchQuery = query.trim()
+            queried = if (matchQuery.isEmpty()) {
+                apps.toList()
+            } else {
+                apps.forEach {
+                    if (it.name.contains(matchQuery, true)) {
+                        temp.add(it)
+                    }
                 }
+                temp.sort()
+                temp
             }
-            temp.sort()
-            temp
         }
     }
 

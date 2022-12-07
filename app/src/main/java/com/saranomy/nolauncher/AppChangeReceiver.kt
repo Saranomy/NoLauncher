@@ -6,8 +6,6 @@ import android.content.Intent
 
 class AppChangeReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
-        intent?.action?.let {
-            MainActivity.self?.load()
-        }
+        MainActivity.self?.load(intent?.action)
     }
 }
