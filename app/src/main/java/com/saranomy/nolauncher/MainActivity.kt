@@ -3,12 +3,14 @@ package com.saranomy.nolauncher
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
@@ -42,6 +44,7 @@ class MainActivity : ComponentActivity() {
     private var queried by mutableStateOf(listOf<AppItem>())
     private var query by mutableStateOf("")
     private var loading by mutableStateOf(false)
+    private var appChangeReceiver = AppChangeReceiver()
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -143,11 +146,17 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        registerReceiver(AppChangeReceiver(), IntentFilter().apply {
+        Log.wtf("TAG", "onCreate")
+        registerReceiver(appChangeReceiver, IntentFilter().apply {
             addAction(Intent.ACTION_PACKAGE_ADDED)
             addAction(Intent.ACTION_PACKAGE_REMOVED)
             addDataScheme("package")
         })
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        Log.wtf("TAG", "onConfigurationChanged")
     }
 
     override fun onResume() {
@@ -158,6 +167,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
+        try {
+            unregisterReceiver(appChangeReceiver)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        Log.wtf("TAG", "onStop")
         self = null
     }
 
@@ -166,6 +181,7 @@ class MainActivity : ComponentActivity() {
     }
 
     fun load() {
+        Log.wtf("TAG", "load")
         CoroutineScope(Dispatchers.IO).launch {
             loading = true
             try {
@@ -194,6 +210,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun query() {
+        Log.wtf("TAG", "query $query")
         val temp = arrayListOf<AppItem>()
         val matchQuery = query.trim()
         queried = if (matchQuery.isEmpty()) {
