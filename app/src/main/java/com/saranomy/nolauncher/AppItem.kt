@@ -11,14 +11,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 data class AppItem(
     val name: String,
-    val packageName: String,
-    val icon: ImageBitmap
+    val packageName: String
 ) : Comparable<AppItem> {
     override fun compareTo(other: AppItem): Int {
         return name.compareTo(other.name, true)
@@ -37,11 +35,13 @@ data class AppItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                bitmap = icon,
-                contentDescription = null,
-                modifier = Modifier.size(32.dp)
-            )
+            MainActivity.icons[packageName]?.let {
+                Image(
+                    bitmap = it,
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
             Text(
                 text = name,
                 maxLines = 1,

@@ -9,7 +9,6 @@ import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
@@ -39,6 +38,7 @@ class MainActivity : ComponentActivity() {
     companion object {
         var self: MainActivity? = null
         var apps by mutableStateOf(listOf<AppItem>())
+        var icons = HashMap<String, ImageBitmap>()
     }
 
     private var queried by mutableStateOf(listOf<AppItem>())
@@ -214,9 +214,11 @@ class MainActivity : ComponentActivity() {
                                 AppItem(
                                     name = info.loadLabel(packageManager).toString(),
                                     packageName = info.packageName,
-                                    icon = icon(info.loadIcon(packageManager))
                                 )
                             )
+                            if (!icons.containsKey(info.packageName)) {
+                                icon(info.packageName, info.loadIcon(packageManager))
+                            }
                         }
                     }
                     temp.sort()
@@ -247,7 +249,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun icon(drawable: Drawable): ImageBitmap {
+    private fun icon(packageName: String, drawable: Drawable) {
         val bitmap = Bitmap.createBitmap(
             drawable.intrinsicWidth, drawable.intrinsicHeight,
             Bitmap.Config.ARGB_8888
@@ -257,6 +259,6 @@ class MainActivity : ComponentActivity() {
             setBounds(0, 0, canvas.width, canvas.height)
             draw(canvas)
         }
-        return bitmap.asImageBitmap()
+        icons[packageName] = bitmap.asImageBitmap()
     }
 }
