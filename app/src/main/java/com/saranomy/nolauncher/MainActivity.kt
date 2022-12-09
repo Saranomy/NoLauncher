@@ -12,6 +12,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -70,7 +71,7 @@ class MainActivity : ComponentActivity() {
                         TextField(
                             value = query,
                             onValueChange = {
-                                query = it
+                                query = it.replace("\n", "")
                                 query()
                             },
                             placeholder = {
@@ -118,7 +119,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 })
                             }
-                            if (apps.isNotEmpty()) {
+                            if (apps.isNotEmpty() && query.isEmpty()) {
                                 item {
                                     Text(
                                         text = "${stringResource(id = R.string.app_name)} ${BuildConfig.VERSION_NAME}",
@@ -126,7 +127,10 @@ class MainActivity : ComponentActivity() {
                                         textAlign = TextAlign.Center,
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clickable {
+                                            .clickable(
+                                                interactionSource = remember { MutableInteractionSource() },
+                                                indication = null
+                                            ) {
                                                 try {
                                                     startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${BuildConfig.APPLICATION_ID}")).apply {
                                                         flags = Intent.FLAG_ACTIVITY_NO_HISTORY or Intent.FLAG_ACTIVITY_MULTIPLE_TASK or Intent.FLAG_ACTIVITY_NEW_DOCUMENT
@@ -207,9 +211,9 @@ class MainActivity : ComponentActivity() {
                         0
                     }
                 }
-                if (appHashCount != resultHashCount) {
+                if (appHashCount != resultHashCount || apps.isEmpty() || (query.trim().isEmpty() && queried.isEmpty())) {
                     result.forEach { info ->
-                        if (packageManager.getLaunchIntentForPackage(info.packageName) != null) {
+                        if (packageManager.getLaunchIntentForPackage(info.packageName) != null  || info.packageName == packageName) {
                             temp.add(
                                 AppItem(
                                     name = info.loadLabel(packageManager).toString(),
@@ -251,7 +255,8 @@ class MainActivity : ComponentActivity() {
 
     private fun icon(packageName: String, drawable: Drawable) {
         val bitmap = Bitmap.createBitmap(
-            drawable.intrinsicWidth, drawable.intrinsicHeight,
+            if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 1,
+            if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 1,
             Bitmap.Config.ARGB_8888
         )
         val canvas = Canvas(bitmap)
