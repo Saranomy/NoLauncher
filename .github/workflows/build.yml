@@ -1,0 +1,59 @@
+name: Build
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build.yml'
+      - 'app/**'
+      - 'gradle/**'
+      - '*.gradle'
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: 'Upload APK'
+        type: boolean
+        required: true
+        default: false
+      tag:
+        description: 'Tag name'
+        type: string
+        required: false
+        default: ''
+      release:
+        description: 'Upload to Release'
+        type: boolean
+        required: true
+        default: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out
+        uses: actions/checkout@v3
+      - name: Cache
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper/dists/gradle-7.4-bin
+          key: ${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Build with Gradle
+        run: ./gradlew assemble
+      - if: ${{ github.event.inputs.upload == 'true' }}
+        name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: NoLauncher-BuiltAPKs
+          path: app/build/outputs/apk/**/*.apk
+          if-no-files-found: ignore
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
+        if: ${{ github.event.inputs.release == 'true' }}
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          draft: true
+          prerelease: false
+          files: app/build/outputs/apk/debug/app-debug.apk
