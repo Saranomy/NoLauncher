@@ -14,7 +14,7 @@
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
         tools:targetApi="33">
         <activity
-            android:name=".MainActivity"
+            android:name=".NoLauncher"
             android:clearTaskOnLaunch="true"
             android:exported="true"
             android:launchMode="singleTask"
@@ -27,6 +27,7 @@
 
                 <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
                 <category android:name="android.intent.category.MONKEY" />
             </intent-filter>
             <meta-data
