@@ -35,7 +35,7 @@
                 android:value="" />
         </activity>
         <receiver
-            android:name="AppChangeReceiver"
+            android:name=".AppChangeReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
