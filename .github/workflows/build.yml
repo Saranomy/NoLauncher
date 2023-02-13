@@ -5,22 +5,12 @@ on:
     paths:
       - '.github/workflows/build.yml'
       - 'app/**'
-      - 'gradle/**'
+      - 'gradle/wrapper/gradle-wrapper.properties'
       - '*.gradle'
   workflow_dispatch:
     inputs:
-      upload:
-        description: 'Upload APK'
-        type: boolean
-        required: true
-        default: false
-      tag:
-        description: 'Tag name'
-        type: string
-        required: false
-        default: ''
       release:
-        description: 'Upload to Release'
+        description: 'Release'
         type: boolean
         required: true
         default: false
@@ -33,27 +23,25 @@ jobs:
       - name: Check out
         uses: actions/checkout@v3
       - name: Cache
-        id: cache
         uses: actions/cache@v3
         with:
           path: |
             ~/.gradle/caches
-            ~/.gradle/wrapper/dists/gradle-7.4-bin
+            ~/.gradle/wrapper/dists
           key: ${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
       - name: Build with Gradle
-        run: ./gradlew assemble
-      - if: ${{ github.event.inputs.upload == 'true' }}
-        name: Upload build artifact
+        run: |
+          ./gradlew assemble
+          echo "app_ver=$(grep versionName ./app/build.gradle | awk '{print $2}' | tr -d \")" >> $GITHUB_ENV
+      - name: Upload build artifact
         uses: actions/upload-artifact@v3
         with:
-          name: NoLauncher-BuiltAPKs
+          name: NoLauncher_v${{ env.app_ver }}-Built
           path: app/build/outputs/apk/**/*.apk
-          if-no-files-found: ignore
-      - name: Upload to Release
+      - name: Release
         uses: softprops/action-gh-release@v1
         if: ${{ github.event.inputs.release == 'true' }}
         with:
-          tag_name: ${{ github.event.inputs.tag }}
+          tag_name: v${{ env.app_ver }}
           draft: true
           prerelease: false
-          files: app/build/outputs/apk/debug/app-debug.apk
