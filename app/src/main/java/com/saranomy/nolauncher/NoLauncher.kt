@@ -35,9 +35,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class MainActivity : ComponentActivity() {
+class NoLauncher : ComponentActivity() {
     companion object {
-        var self: MainActivity? = null
+        var self: NoLauncher? = null
         var apps by mutableStateOf(listOf<AppItem>())
         var icons = HashMap<String, ImageBitmap>()
     }

@@ -1,0 +1,47 @@
+name: Build
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build.yml'
+      - 'app/**'
+      - 'gradle/wrapper/gradle-wrapper.properties'
+      - '*.gradle'
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Release'
+        type: boolean
+        required: true
+        default: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out
+        uses: actions/checkout@v3
+      - name: Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper/dists
+          key: ${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
+      - name: Build with Gradle
+        run: |
+          ./gradlew assemble
+          echo "app_ver=$(grep versionName ./app/build.gradle | awk '{print $2}' | tr -d \")" >> $GITHUB_ENV
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: NoLauncher_v${{ env.app_ver }}-Built
+          path: app/build/outputs/apk/**/*.apk
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: ${{ github.event.inputs.release == 'true' }}
+        with:
+          tag_name: v${{ env.app_ver }}
+          draft: true
+          prerelease: false

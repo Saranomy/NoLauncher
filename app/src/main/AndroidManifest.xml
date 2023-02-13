@@ -12,14 +12,14 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
-        tools:targetApi="31">
+        tools:targetApi="33">
         <activity
-            android:name=".MainActivity"
+            android:name=".NoLauncher"
             android:clearTaskOnLaunch="true"
+            android:configChanges="uiMode"
             android:exported="true"
             android:launchMode="singleTask"
             android:stateNotNeeded="true"
-            android:configChanges="uiMode"
             android:windowSoftInputMode="stateUnspecified|adjustPan">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -27,6 +27,7 @@
 
                 <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
                 <category android:name="android.intent.category.MONKEY" />
             </intent-filter>
             <meta-data
@@ -34,7 +35,7 @@
                 android:value="" />
         </activity>
         <receiver
-            android:name="AppChangeReceiver"
+            android:name=".AppChangeReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
