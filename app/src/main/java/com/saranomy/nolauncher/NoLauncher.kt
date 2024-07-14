@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.*
+import androidx.compose.material3.TextFieldDefaults.textFieldColors
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,9 +36,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class MainActivity : ComponentActivity() {
+class NoLauncher : ComponentActivity() {
     companion object {
-        var self: MainActivity? = null
+        var self: NoLauncher? = null
         var apps by mutableStateOf(listOf<AppItem>())
         var icons = HashMap<String, ImageBitmap>()
     }
@@ -89,7 +90,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             },
                             singleLine = true,
-                            colors = TextFieldDefaults.textFieldColors(
+                            colors = textFieldColors(
                                 containerColor = Color.Transparent,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent,
@@ -139,7 +140,7 @@ class MainActivity : ComponentActivity() {
                                                     startActivity(
                                                         Intent(
                                                             Intent.ACTION_VIEW,
-                                                            Uri.parse("http://play.google.com/store/apps/details?id=${BuildConfig.APPLICATION_ID}")
+                                                            Uri.parse("https://play.google.com/store/apps/details?id=${BuildConfig.APPLICATION_ID}")
                                                         )
                                                     )
                                                 }
@@ -186,14 +187,17 @@ class MainActivity : ComponentActivity() {
         self = null
     }
 
+    @Deprecated("This method has been deprecated in favor of using the\n      {@link OnBackPressedDispatcher} via {@link #getOnBackPressedDispatcher()}.\n      The OnBackPressedDispatcher controls how back button events are dispatched\n      to one or more {@link OnBackPressedCallback} objects.")
     override fun onBackPressed() {
+        @Suppress("DEPRECATION")
+        super.onBackPressed()
         query = ""
         query()
         focusManager.clearFocus()
         scrolling = true
     }
 
-    fun load(action: String? = null) {
+    fun load() {
         CoroutineScope(Dispatchers.IO).launch {
             loading = true
             try {

@@ -39,7 +39,7 @@ data class AppItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            MainActivity.icons[packageName]?.let {
+            NoLauncher.icons[packageName]?.let {
                 Image(
                     bitmap = it,
                     contentDescription = null,
